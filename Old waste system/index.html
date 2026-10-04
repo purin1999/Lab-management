@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Waste Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .copy-btn { font-size: 0.72rem; padding: 1px 7px; }
+    tbody + tbody { border-top: 2px solid #dee2e6; }
+    tbody:hover td { background-color: rgba(0,0,0,0.04); }
+    .solvent-row .solvent-select { width: 130px; flex: none; }
+    .solvent-row .solvent-other { width: 110px; flex: none; display: none; }
+    .solvent-row .vol-input { width: 88px; flex: none; }
+    .solvent-row .solute-input { flex: 1; min-width: 80px; }
+    .solvent-row .conc-input { width: 72px; flex: none; }
+    .solvent-row .unit-select { width: 74px; flex: none; }
+    @media (max-width: 575px) {
+      .solvent-row .solvent-select { width: 48%; }
+      .solvent-row .solvent-other { width: 48%; }
+      .solvent-row .vol-input { width: 48%; }
+      .solvent-row .solute-input { width: 100%; flex: none; }
+      .solvent-row .conc-input { width: 40%; }
+      .solvent-row .unit-select { width: 30%; }
+    }
+</style>
+</head>
+<body class="bg-light">
+<div class="container py-4" style="max-width:940px">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Lab Waste Tracker</h5>
+    <span class="text-muted small">
+      <strong>{{ user }}</strong> &nbsp;|&nbsp;
+      <a href="/report" class="text-decoration-none">Report</a> &nbsp;|&nbsp;
+      <a href="/feedback" class="text-decoration-none">Feedback</a> &nbsp;|&nbsp;
+      <a href="/logout" class="text-danger text-decoration-none">Logout</a>
+    </span>
+  </div>
+
+  <!-- Tank Tabs nav -->
+  <ul class="nav nav-tabs" id="tankTabs">
+    {% for t in tanks %}
+    <li class="nav-item">
+      <a class="nav-link {% if loop.first %}active{% endif %}"
+         href="#tank-{{ t.tank_id }}" data-bs-toggle="tab" id="tab-{{ t.tank_id }}">
+        Tank {{ t.tank_id }}
+        <span class="badge bg-secondary ms-1">{{ t.waste_type }}</span>
+      </a>
+    </li>
+    {% endfor %}
+    <li class="nav-item ms-auto d-flex align-items-center">
+      <button class="btn btn-sm btn-outline-primary" type="button"
+              data-bs-toggle="collapse" data-bs-target="#newTankForm">+ Tank</button>
+    </li>
+  </ul>
+
+  <!-- Add Tank form -->
+  <div class="collapse {% if not tanks %}show{% endif %}" id="newTankForm">
+    <div class="card card-body border-top-0 rounded-0 rounded-bottom mb-0 py-2">
+      <form method="POST" action="/add_tank" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label small mb-1">Number</label>
+          <input type="number" name="tank_id" class="form-control form-control-sm"
+                 placeholder="01" min="1" max="99" style="width:72px" required>
+        </div>
+        <div class="col-auto">
+          <label class="form-label small mb-1">Waste type</label>
+          <select name="waste_type" class="form-select form-select-sm" style="width:110px">
+            {% for wt in waste_types %}
+            <option value="{{ wt }}" {% if wt == 'k' %}selected{% endif %}>{{ wt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm btn-primary">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if not tanks %}
+  <div class="alert alert-info mt-3">No tanks yet — add one above to get started.</div>
+  {% endif %}
+
+  <!-- Tab content -->
+  <div class="tab-content" id="tankTabContent">
+    {% for t in tanks %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+         id="tank-{{ t.tank_id }}">
+
+      <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-sm btn-outline-secondary" type="button"
+                data-bs-toggle="modal" data-bs-target="#settingsModal-{{ t.tank_id }}">
+          ⚙ Tank Settings
+        </button>
+      </div>
+
+      <!-- Entry form -->
+      <div class="card border-top-0 rounded-0 rounded-bottom mb-3">
+        <div class="card-body pb-3">
+          <form method="POST" action="/add_entry" id="form-{{ t.tank_id }}">
+            <input type="hidden" name="tank_id" value="{{ t.tank_id }}">
+            <input type="hidden" name="replace_group_id" id="replace-{{ t.tank_id }}" value="">
+
+            <div id="editing-notice-{{ t.tank_id }}"
+                 class="alert alert-warning py-1 px-2 small mb-2" style="display:none">
+              Editing entry — submit to save changes, or
+              <a href="#" onclick="clearForm('{{ t.tank_id }}');return false">cancel</a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <label class="form-label small mb-0 text-nowrap" for="date-{{ t.tank_id }}">
+                Date thrown
+              </label>
+              <input type="date" name="entry_date" id="date-{{ t.tank_id }}"
+                     class="form-control form-control-sm" style="width:165px"
+                     value="{{ today }}" max="{{ today }}">
+            </div>
+
+            <div id="solvents-{{ t.tank_id }}">
+              <!-- Solvent rows injected here by JS on page load -->
+            </div>
+
+            <div class="d-flex gap-2 mt-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      onclick="addSolventRow('{{ t.tank_id }}')">+ Add solvent</button>
+              <button type="submit" class="btn btn-sm btn-success px-4" id="submit-{{ t.tank_id }}">
+                Log Entry
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary ms-auto"
+                      onclick="clearForm('{{ t.tank_id }}')">Clear</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tank storage visual -->
+      {% set s = summaries[t.tank_id] %}
+      {% set pct_used = (s.total / tank_max_l * 100) | round(1) %}
+      {% set remaining = tank_max_l - s.total %}
+      <div class="card mb-3 shadow-sm" id="storage-card-{{ t.tank_id }}">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small fw-semibold">Tank Storage</span>
+            <span class="small" id="storage-label-{{ t.tank_id }}">
+              <span class="{{ 'text-danger fw-bold' if s.total >= tank_max_l else '' }}">
+                {{ "%.3f"|format(s.total) }} / {{ tank_max_l }} L
+              </span>
+              <span class="text-muted ms-2">({{ "%.3f"|format(remaining) }} L free)</span>
+            </span>
+          </div>
+          <!-- Stacked bar: current state -->
+          <div class="progress mb-2" style="height:22px" id="storage-bar-{{ t.tank_id }}">
+            {% set ns = namespace(used_colors=[]) %}
+            {% for solvent, vol in s.by_solvent.items() %}
+            {% set color = solvent_colors.get(solvent, fallback_colors[loop.index0 % fallback_colors|length]) %}
+            {% set bar_pct = (vol / tank_max_l * 100) | round(2) %}
+            <div class="progress-bar" role="progressbar"
+                 style="width:{{ bar_pct }}%; background-color:{{ color }}; color:#000; font-size:0.68rem; overflow:hidden"
+                 title="{{ solvent }}: {{ '%.3f'|format(vol) }} L">
+              {% if bar_pct > 7 %}{{ solvent }}{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <!-- Composition detail -->
+          <div class="d-flex flex-wrap gap-2 small">
+            {% for solvent, vol in s.by_solvent.items() %}
+            {% set color = solvent_colors.get(solvent, '#adb5bd') %}
+            {% set pct = (vol / s.total * 100) | round(1) if s.total > 0 else 0 %}
+            <span>
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:{{ color }}"></span>
+              {{ solvent }} {{ "%.3f"|format(vol) }}L ({{ pct }}%)
+            </span>
+            {% endfor %}
+            {% if not s.by_solvent %}
+            <span class="text-muted">Empty</span>
+            {% endif %}
+          </div>
+          <!-- Composition rule indicator -->
+          {% if t.waste_type == 'k' and s.total > 0 %}
+          {% set organic_L = (s.total - s.water) | round(3) %}
+          <div class="mt-1 small {{ 'text-success' if organic_L <= 2.5 else 'text-danger' }}">
+            k-tank rule: non-water = {{ organic_L }} L
+            {{ '✓ (≤2.5 L)' if organic_L <= 2.5 else '✗ (must be ≤2.5 L)' }}
+          </div>
+          {% elif t.waste_type == 'f-OH' and s.total > 0 %}
+          {% set water_L = s.water | round(3) %}
+          <div class="mt-1 small {{ 'text-success' if water_L <= 2.5 else 'text-danger' }}">
+            f-OH rule: water = {{ water_L }} L
+            {{ '✓ (≤2.5 L)' if water_L <= 2.5 else '✗ (must be ≤2.5 L)' }}
+          </div>
+          {% endif %}
+          <!-- Real-time preview (updated by JS) -->
+          <div id="storage-preview-{{ t.tank_id }}" class="mt-1 small"></div>
+        </div>
+      </div>
+
+      <!-- Entry log -->
+      <div class="card shadow-sm">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span class="small fw-semibold">Tank {{ t.tank_id }} — Recent Entries</span>
+          <span class="d-flex gap-2">
+            <a href="/form/{{ t.tank_id }}" class="btn btn-sm btn-outline-primary"
+               style="font-size:0.75rem;padding:2px 10px">Submitted form (Word)</a>
+            <a href="/export/{{ t.tank_id }}" class="btn btn-sm btn-outline-secondary"
+               style="font-size:0.75rem;padding:2px 10px">Export CSV</a>
+          </span>
+        </div>
+        <div class="card-body p-0">
+          {% set groups = groups_by_tank[t.tank_id] %}
+          {% if groups %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th></th>
+                  <th>Date</th>
+                  <th>By</th>
+                  <th>Solvent</th>
+                  <th>Vol (L)</th>
+                  <th>Solute</th>
+                  <th>Conc (g/L)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              {% for g in groups %}
+              <tbody>
+                {% for s in g.solvents %}
+                <tr>
+                  {% if loop.first %}
+                  <td rowspan="{{ g.solvents|length }}" class="align-middle">
+                    <button class="btn btn-outline-primary copy-btn"
+                            data-solvents="{{ g.solvents | tojson | forceescape }}"
+                            onclick="copyGroup('{{ t.tank_id }}', this)">Copy</button>
+                  </td>
+                  <td rowspan="{{ g.solvents|length }}" class="small text-nowrap align-middle">
+                    {{ g.logged_at[:10] }}
+                  </td>
+                  <td rowspan="{{ g.solvents|length }}" class="small align-middle">
+                    {{ g.logged_by }}
+                  </td>
+                  {% endif %}
+                  <td>{{ s.solvent }}</td>
+                  <td>{{ s.solvent_L }}</td>
+                  <td>{{ s.solute or "—" }}</td>
+                  <td>{{ s.solute_g_per_L if s.solute_g_per_L != "" else "—" }}</td>
+                  {% if loop.first %}
+                  <td rowspan="{{ g.solvents|length }}" class="align-middle text-nowrap">
+                    <button class="btn btn-outline-warning copy-btn"
+                            data-solvents="{{ g.solvents | tojson | forceescape }}"
+                            data-group-id="{{ g.id }}"
+                            data-date="{{ g.logged_at[:10] }}"
+                            onclick="editGroup('{{ t.tank_id }}', this)">Edit</button>
+                    <form method="POST" action="/delete_group/{{ g.id }}" style="display:inline"
+                          onsubmit="return confirm('Delete this entry?')">
+                      <button type="submit" class="btn btn-outline-danger copy-btn">Del</button>
+                    </form>
+                  </td>
+                  {% endif %}
+                </tr>
+                {% endfor %}
+              </tbody>
+              {% endfor %}
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted small p-3 mb-0">No entries yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Tank Settings modal -->
+      <div class="modal fade" id="settingsModal-{{ t.tank_id }}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h6 class="modal-title">Tank {{ t.tank_id }} Settings</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+              <ul class="nav nav-tabs nav-tabs-sm mb-3" id="settingsTabs-{{ t.tank_id }}">
+                <li class="nav-item">
+                  <a class="nav-link active" href="#archive-pane-{{ t.tank_id }}" data-bs-toggle="tab">Archive</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#rename-pane-{{ t.tank_id }}" data-bs-toggle="tab">Rename</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link text-danger" href="#delete-pane-{{ t.tank_id }}" data-bs-toggle="tab">Delete</a>
+                </li>
+              </ul>
+
+              <div class="tab-content">
+
+                <!-- Archive -->
+                <div class="tab-pane fade show active" id="archive-pane-{{ t.tank_id }}">
+                  <p class="small text-muted">
+                    Archiving hides this tank from the main view once it's been picked up
+                    for treatment. All its data is kept and can be unarchived later.
+                  </p>
+                  <form method="POST" action="/archive_tank/{{ t.tank_id }}">
+                    <label class="form-label small">Type <code>archive</code> to confirm</label>
+                    <input type="text" name="confirm" class="form-control form-control-sm mb-2"
+                           oninput="checkConfirm(this, 'archive')" autocomplete="off">
+                    <button type="submit" class="btn btn-sm btn-warning" disabled>Archive Tank</button>
+                  </form>
+                </div>
+
+                <!-- Rename -->
+                <div class="tab-pane fade" id="rename-pane-{{ t.tank_id }}">
+                  <p class="small text-muted">Fix the tank number or waste type if it was created wrong.</p>
+                  <form method="POST" action="/rename_tank/{{ t.tank_id }}">
+                    <div class="row g-2 mb-2">
+                      <div class="col-6">
+                        <label class="form-label small">Number</label>
+                        <input type="number" name="new_tank_id" class="form-control form-control-sm"
+                               value="{{ t.tank_id }}" min="1" max="99" required>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">Waste type</label>
+                        <select name="new_waste_type" class="form-select form-select-sm">
+                          {% for wt in waste_types %}
+                          <option value="{{ wt }}" {% if wt == t.waste_type %}selected{% endif %}>{{ wt }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                    <label class="form-label small">Type <code>rename</code> to confirm</label>
+                    <input type="text" name="confirm" class="form-control form-control-sm mb-2"
+                           oninput="checkConfirm(this, 'rename')" autocomplete="off">
+                    <button type="submit" class="btn btn-sm btn-warning" disabled>Rename Tank</button>
+                  </form>
+                </div>
+
+                <!-- Delete -->
+                <div class="tab-pane fade" id="delete-pane-{{ t.tank_id }}">
+                  <p class="small text-danger">
+                    This permanently deletes the tank and every logged entry in it.
+                    This cannot be undone — use Archive instead if the tank just needs to
+                    disappear from the main view.
+                  </p>
+                  <form method="POST" action="/delete_tank/{{ t.tank_id }}">
+                    <label class="form-label small">Type <code>delete</code> to confirm</label>
+                    <input type="text" name="confirm" class="form-control form-control-sm mb-2"
+                           oninput="checkConfirm(this, 'delete')" autocomplete="off">
+                    <button type="submit" class="btn btn-sm btn-danger" disabled>Delete Tank</button>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Archived Tanks -->
+  {% if archived_tanks %}
+  <div class="mt-4">
+    <button class="btn btn-sm btn-outline-secondary" type="button"
+            data-bs-toggle="collapse" data-bs-target="#archivedTanks">
+      Archived Tanks ({{ archived_tanks|length }})
+    </button>
+    <div class="collapse mt-2" id="archivedTanks">
+      <div class="list-group">
+        {% for t in archived_tanks %}
+        {% set s = archived_summaries[t.tank_id] %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small">
+            Tank {{ t.tank_id }} <span class="badge bg-secondary ms-1">{{ t.waste_type }}</span>
+            <span class="text-muted ms-2">{{ "%.3f"|format(s.total) }} L logged</span>
+          </span>
+          <form method="POST" action="/unarchive_tank/{{ t.tank_id }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Unarchive</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const SOLVENTS = {{ solvents | tojson }};
+const TODAY = {{ today | tojson }};
+
+// Build a solvent row element
+function createSolventRow() {
+  const opts = SOLVENTS.map(s => `<option value="${s}">${s}</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'solvent-row border rounded p-2 mb-2';
+  div.innerHTML = `
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <select name="solvent_select[]" class="form-select form-select-sm solvent-select"
+              onchange="toggleRowOther(this)">
+        ${opts}
+        <option value="other">Other</option>
+      </select>
+      <input type="text" name="solvent_other[]" class="form-control form-control-sm solvent-other"
+             placeholder="Solvent name">
+      <input type="number" name="solvent_L[]" class="form-control form-control-sm vol-input"
+             placeholder="Vol (L)" step="0.001" min="0" required>
+      <input type="text" name="solute[]" class="form-control form-control-sm solute-input"
+             placeholder="Solute">
+      <input type="number" name="solute_amount[]" class="form-control form-control-sm conc-input"
+             placeholder="g/L" step="0.001" min="0">
+      <select name="solute_unit[]" class="form-select form-select-sm unit-select">
+        <option value="g/L">g/L</option>
+        <option value="g">g</option>
+      </select>
+      <button type="button" class="btn btn-sm btn-outline-danger remove-btn"
+              onclick="removeRow(this)">✕</button>
+    </div>
+    <div class="conc-hint small text-muted mt-1" style="display:none"></div>`;
+  return div;
+}
+
+// When the amount is typed as a plain mass, show the g/L it will be stored as.
+function updateRowHint(row) {
+  const unit = row.querySelector('[name="solute_unit[]"]').value;
+  const amountInput = row.querySelector('[name="solute_amount[]"]');
+  const amount = parseFloat(amountInput.value);
+  const vol = parseFloat(row.querySelector('[name="solvent_L[]"]').value);
+  const hint = row.querySelector('.conc-hint');
+
+  amountInput.placeholder = unit;
+  if (unit === 'g' && amount > 0 && vol > 0) {
+    hint.textContent = `${amount} g in ${vol} L — stored as ${(amount / vol).toFixed(3)} g/L`;
+    hint.style.display = '';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function updateConcHints(tid) {
+  document.querySelectorAll('#solvents-' + tid + ' .solvent-row').forEach(updateRowHint);
+}
+
+function addSolventRow(tid, data = null) {
+  const container = document.getElementById('solvents-' + tid);
+  const row = createSolventRow();
+
+  if (data) {
+    const sel = row.querySelector('[name="solvent_select[]"]');
+    const otherInput = row.querySelector('[name="solvent_other[]"]');
+    if (SOLVENTS.includes(data.solvent)) {
+      sel.value = data.solvent;
+    } else {
+      sel.value = 'other';
+      otherInput.style.display = 'block';
+      otherInput.value = data.solvent;
+    }
+    row.querySelector('[name="solvent_L[]"]').value = data.solvent_L;
+    if (data.solute) {
+      row.querySelector('[name="solute[]"]').value = data.solute;
+      row.querySelector('[name="solute_amount[]"]').value = data.solute_g_per_L;
+    }
+  }
+
+  container.appendChild(row);
+  updateRemoveBtns(tid);
+}
+
+function removeRow(btn) {
+  const row = btn.closest('.solvent-row');
+  const container = row.parentElement;
+  const tid = container.id.replace('solvents-', '');
+  row.remove();
+  updateRemoveBtns(tid);
+}
+
+function updateRemoveBtns(tid) {
+  const rows = document.querySelectorAll('#solvents-' + tid + ' .solvent-row');
+  rows.forEach(r => {
+    r.querySelector('.remove-btn').style.display = rows.length > 1 ? '' : 'none';
+  });
+}
+
+function toggleRowOther(select) {
+  const row = select.closest('.solvent-row');
+  const other = row.querySelector('[name="solvent_other[]"]');
+  if (select.value === 'other') {
+    other.style.display = 'block';
+  } else {
+    other.style.display = 'none';
+    other.value = '';
+  }
+}
+
+function toggleRowSolute(checkbox) {
+  const detail = checkbox.closest('.solvent-row').querySelector('.solute-detail');
+  if (!checkbox.checked) {
+    detail.querySelectorAll('input').forEach(i => i.value = '');
+    detail.style.display = 'none';
+  } else {
+    detail.style.display = '';
+  }
+}
+
+function clearForm(tid) {
+  document.getElementById('solvents-' + tid).innerHTML = '';
+  document.getElementById('replace-' + tid).value = '';
+  document.getElementById('date-' + tid).value = TODAY;
+  document.getElementById('editing-notice-' + tid).style.display = 'none';
+  document.getElementById('submit-' + tid).textContent = 'Log Entry';
+  document.getElementById('submit-' + tid).className = 'btn btn-sm btn-success px-4';
+  addSolventRow(tid);
+}
+
+function copyGroup(tid, btn) {
+  const data = JSON.parse(btn.dataset.solvents);
+  document.getElementById('solvents-' + tid).innerHTML = '';
+  document.getElementById('replace-' + tid).value = '';
+  document.getElementById('date-' + tid).value = TODAY;  // a copy is a new pour
+  document.getElementById('editing-notice-' + tid).style.display = 'none';
+  document.getElementById('submit-' + tid).textContent = 'Log Entry';
+  document.getElementById('submit-' + tid).className = 'btn btn-sm btn-success px-4';
+  data.forEach(item => addSolventRow(tid, item));
+  document.getElementById('form-' + tid).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function editGroup(tid, btn) {
+  const data = JSON.parse(btn.dataset.solvents);
+  const groupId = btn.dataset.groupId;
+  document.getElementById('solvents-' + tid).innerHTML = '';
+  data.forEach(item => addSolventRow(tid, item));
+  document.getElementById('replace-' + tid).value = groupId;
+  document.getElementById('date-' + tid).value = btn.dataset.date;
+  document.getElementById('editing-notice-' + tid).style.display = '';
+  document.getElementById('submit-' + tid).textContent = 'Save Changes';
+  document.getElementById('submit-' + tid).className = 'btn btn-sm btn-warning px-4';
+  document.getElementById('form-' + tid).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Validation & preview ────────────────────────────────────────────
+const SUMMARIES    = {{ summaries   | tojson }};
+const TANK_TYPES   = {{ tank_types  | tojson }};
+const GROUP_VOLS   = {{ group_vols  | tojson }};
+const TANK_MAX     = {{ tank_max_l  | tojson }};
+
+function getFormTotals(tid) {
+  let newTotal = 0, newWater = 0;
+  document.querySelectorAll('#solvents-' + tid + ' .solvent-row').forEach(row => {
+    const vol = parseFloat(row.querySelector('[name="solvent_L[]"]').value) || 0;
+    const sel = row.querySelector('[name="solvent_select[]"]').value;
+    const other = row.querySelector('[name="solvent_other[]"]').value.trim();
+    const solvent = sel === 'other' ? other : sel;
+    newTotal += vol;
+    if (solvent === 'water') newWater += vol;
+  });
+  return { newTotal, newWater };
+}
+
+function updatePreview(tid) {
+  const summary = SUMMARIES[tid] || { total: 0, water: 0 };
+  const tankType = TANK_TYPES[tid] || '';
+  const replaceId = document.getElementById('replace-' + tid).value;
+  const gv = (GROUP_VOLS[tid] || {})[replaceId] || { total: 0, water: 0 };
+
+  const baseTotal = summary.total - gv.total;
+  const baseWater = summary.water - gv.water;
+  const { newTotal, newWater } = getFormTotals(tid);
+
+  if (newTotal <= 0) {
+    document.getElementById('storage-preview-' + tid).innerHTML = '';
+    return;
+  }
+
+  const finalTotal = baseTotal + newTotal;
+  const finalWater = baseWater + newWater;
+  const overflow   = finalTotal > TANK_MAX + 0.001;
+  const waterPct   = finalTotal > 0 ? finalWater / finalTotal * 100 : 0;
+
+  const finalOrganic = finalTotal - finalWater;
+  let ruleOk = true, ruleMsg = '';
+  if (tankType === 'k' && finalTotal > 0) {
+    ruleOk  = finalOrganic <= 2.5 + 0.001;
+    ruleMsg = ` · non-water ${finalOrganic.toFixed(3)} L ${ruleOk ? '✓' : '✗ (max 2.5 L)'}`;
+  } else if (tankType === 'f-OH' && finalTotal > 0) {
+    ruleOk  = finalWater <= 2.5 + 0.001;
+    ruleMsg = ` · water ${finalWater.toFixed(3)} L ${ruleOk ? '✓' : '✗ (max 2.5 L)'}`;
+  }
+
+  const ok    = !overflow && ruleOk;
+  const color = ok ? 'text-success' : 'text-danger';
+  document.getElementById('storage-preview-' + tid).innerHTML =
+    `<span class="${color}">After entry: ${finalTotal.toFixed(3)} / ${TANK_MAX} L` +
+    (overflow ? ` ✗ OVERFLOW` : ` (+${newTotal.toFixed(3)} L)`) +
+    ruleMsg + `</span>`;
+}
+
+function validateSubmit(e, tid) {
+  const summary  = SUMMARIES[tid] || { total: 0, water: 0 };
+  const tankType = TANK_TYPES[tid] || '';
+  const replaceId = document.getElementById('replace-' + tid).value;
+  const gv = (GROUP_VOLS[tid] || {})[replaceId] || { total: 0, water: 0 };
+
+  const baseTotal = summary.total - gv.total;
+  const baseWater = summary.water - gv.water;
+  const { newTotal, newWater } = getFormTotals(tid);
+  const finalTotal = baseTotal + newTotal;
+  const finalWater = baseWater + newWater;
+
+  if (finalTotal > TANK_MAX + 0.001) {
+    e.preventDefault();
+    alert(`Tank overflow: would be ${finalTotal.toFixed(3)} L (max ${TANK_MAX} L).\n` +
+          `Remaining space: ${(TANK_MAX - baseTotal).toFixed(3)} L`);
+    return;
+  }
+  if (finalTotal > 0) {
+    const waterPct = finalWater / finalTotal * 100;
+    const organic = finalTotal - finalWater;
+    if (tankType === 'k' && organic > 2.5 + 0.001) {
+      e.preventDefault();
+      alert(`k tank: non-water solvents cannot exceed 2.5 L.\nAfter this entry: ${organic.toFixed(3)} L.`);
+      return;
+    }
+    if (tankType === 'f-OH' && finalWater > 2.5 + 0.001) {
+      e.preventDefault();
+      alert(`f-OH tank: water cannot exceed 2.5 L.\nAfter this entry: ${finalWater.toFixed(3)} L.`);
+      return;
+    }
+  }
+}
+
+function checkConfirm(input, word) {
+  const btn = input.closest('form').querySelector('button[type="submit"]');
+  btn.disabled = input.value.trim() !== word;
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[id^="solvents-"]').forEach(container => {
+    const tid = container.id.replace('solvents-', '');
+    addSolventRow(tid);
+
+    // Real-time preview on volume/solvent changes
+    container.addEventListener('input', () => { updatePreview(tid); updateConcHints(tid); });
+    container.addEventListener('change', () => { updatePreview(tid); updateConcHints(tid); });
+
+    // Submit validation
+    document.getElementById('form-' + tid)
+      .addEventListener('submit', e => validateSubmit(e, tid));
+  });
+
+  // Show server-side error if redirected back with one
+  const params = new URLSearchParams(window.location.search);
+  const err = params.get('error');
+  const errTank = params.get('error_tank');
+  if (err) {
+    alert('Entry rejected:\n' + err);
+    if (errTank) {
+      const tab = document.querySelector(`a[href="#tank-${errTank}"]`);
+      if (tab) new bootstrap.Tab(tab).show();
+    }
+    // Clean URL
+    history.replaceState({}, '', window.location.pathname + window.location.hash);
+  }
+
+  // Restore active tab from URL hash
+  const hash = window.location.hash;
+  if (hash) {
+    const tab = document.querySelector(`a[href="${hash}"]`);
+    if (tab) new bootstrap.Tab(tab).show();
+  }
+});
+</script>
+</body>
+</html>

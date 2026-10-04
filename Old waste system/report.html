@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Waste Report</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    tbody + tbody { border-top: 2px solid #dee2e6; }
+    @media print {
+      .no-print { display: none !important; }
+      .card { border: none !important; box-shadow: none !important; }
+      .progress, .progress-bar, .swatch {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+    }
+    .swatch { display:inline-block; width:10px; height:10px; border-radius:2px; }
+  </style>
+</head>
+<body class="bg-light">
+<div class="container py-4" style="max-width:940px">
+
+  <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h5 class="mb-0">Waste Report</h5>
+    <div>
+      <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">Print</button>
+      <a href="/" class="text-decoration-none small">← Back to Logger</a>
+    </div>
+  </div>
+
+  {% if not tanks %}
+  <div class="alert alert-info">No tanks registered yet.</div>
+  {% endif %}
+
+  <!-- Lab-wide solvent summary -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-header py-2 small fw-semibold">
+      Total Solvent Summary — active tanks
+      <span class="fw-normal text-muted">(archived tanks excluded — already collected)</span>
+    </div>
+    <div class="card-body py-3">
+      {% if grand_totals %}
+      <div class="d-flex justify-content-between align-items-end mb-2">
+        <span class="h4 mb-0">
+          {{ "%.3f"|format(grand_total) }}<span class="fs-6 text-muted"> L total</span>
+        </span>
+        <span class="small text-muted">
+          across {{ active_count }} active tank{{ '' if active_count == 1 else 's' }}
+        </span>
+      </div>
+
+      <div class="progress mb-3" style="height:26px">
+        {% for solvent, vol in grand_totals.items() %}
+        {% set color = solvent_colors.get(solvent, fallback_colors[loop.index0 % fallback_colors|length]) %}
+        {% set pct = (vol / grand_total * 100) if grand_total > 0 else 0 %}
+        <div class="progress-bar" role="progressbar"
+             style="width:{{ '%.2f'|format(pct) }}%; background-color:{{ color }}; color:#000; font-size:0.7rem; overflow:hidden"
+             title="{{ solvent }}: {{ '%.3f'|format(vol) }} L">
+          {% if pct > 8 %}{{ solvent }}{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="row g-2">
+        {% for solvent, vol in grand_totals.items() %}
+        {% set color = solvent_colors.get(solvent, fallback_colors[loop.index0 % fallback_colors|length]) %}
+        {% set pct = (vol / grand_total * 100) if grand_total > 0 else 0 %}
+        <div class="col-6 col-md-3">
+          <div class="border rounded px-2 py-1">
+            <div class="small text-truncate">
+              <span class="swatch" style="background:{{ color }}"></span> {{ solvent }}
+            </div>
+            <div class="fw-semibold">{{ "%.3f"|format(vol) }} L</div>
+            <div class="text-muted" style="font-size:0.72rem">{{ "%.1f"|format(pct) }}%</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted small mb-0">No entries in active tanks yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs no-print" id="reportTabs">
+    {% for t in tanks %}
+    <li class="nav-item">
+      <a class="nav-link {% if loop.first %}active{% endif %}"
+         href="#r-{{ t.tank_id }}" data-bs-toggle="tab">
+        Tank {{ t.tank_id }}
+        <span class="badge bg-secondary ms-1">{{ t.waste_type }}</span>
+        {% if t.archived %}<span class="badge bg-dark ms-1">Archived</span>{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div class="tab-content">
+    {% for t in tanks %}
+    {% set r = report_by_tank[t.tank_id] %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="r-{{ t.tank_id }}">
+
+      <div class="border-top-0 rounded-0 rounded-bottom mb-3 no-print d-flex justify-content-end">
+        <a href="/form/{{ t.tank_id }}" class="btn btn-sm btn-outline-primary mt-2 me-2">Submitted form (Word)</a>
+        <a href="/export/{{ t.tank_id }}" class="btn btn-sm btn-outline-secondary mt-2">Export CSV</a>
+      </div>
+
+      <div class="row g-3">
+
+        <!-- Entry log (date-wise) -->
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header py-2">
+              <span class="small fw-semibold">
+                Tank {{ t.tank_id }} ({{ t.waste_type }}) — All Entries
+              </span>
+            </div>
+            <div class="card-body p-0">
+              {% if r.groups %}
+              <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>By</th>
+                      <th>Solvent</th>
+                      <th>Vol (L)</th>
+                      <th>Solute</th>
+                      <th>Conc (g/L)</th>
+                    </tr>
+                  </thead>
+                  {% for g in r.groups %}
+                  <tbody>
+                    {% for s in g.solvents %}
+                    <tr>
+                      {% if loop.first %}
+                      <td rowspan="{{ g.solvents|length }}" class="align-middle text-nowrap small fw-semibold">
+                        {{ g.logged_at[:10] }}
+                      </td>
+                      <td rowspan="{{ g.solvents|length }}" class="align-middle small">
+                        {{ g.logged_by }}
+                      </td>
+                      {% endif %}
+                      <td>{{ s.solvent }}</td>
+                      <td>{{ s.solvent_L }}</td>
+                      <td>{{ s.solute or "—" }}</td>
+                      <td>{{ s.solute_g_per_L if s.solute_g_per_L != "" else "—" }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                  {% endfor %}
+                </table>
+              </div>
+              {% else %}
+              <p class="text-muted small p-3 mb-0">No entries for this period.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Solvent totals -->
+        <div class="col-12 col-sm-5">
+          <div class="card shadow-sm">
+            <div class="card-header py-2 small fw-semibold">Solvent Totals (for online system)</div>
+            <div class="card-body p-0">
+              {% if r.totals %}
+              <table class="table table-sm mb-0">
+                <thead class="table-light">
+                  <tr><th>Solvent</th><th>Total (L)</th></tr>
+                </thead>
+                <tbody>
+                  {% for solvent, total in r.totals.items() %}
+                  <tr>
+                    <td>{{ solvent }}</td>
+                    <td><strong>{{ "%.3f" | format(total) }}</strong></td>
+                  </tr>
+                  {% endfor %}
+                  <tr class="table-secondary">
+                    <td><strong>Grand total</strong></td>
+                    <td><strong>{{ "%.3f" | format(r.totals.values() | sum) }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              {% else %}
+              <p class="text-muted small p-3 mb-0">No data.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
