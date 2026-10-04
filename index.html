@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Shimoyama Lab tools: research progress dashboard and laboratory waste tracker.">
+  <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#11141b" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lab">
+  <link rel="icon" href="lab-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="lab-icon.svg">
+  <title>Shimoyama Lab</title>
+  <style>
+    :root {
+      --bg: #f6f7fb; --surface: #fff; --surface-2: #f1f3f8; --text: #1b2130; --muted: #667085; --border: #e2e6ee;
+      --accent: #3b6cf6; --teal: #0f9d8a; --good: #1f9d55; --warn: #e07b00; --bad: #d93b3b;
+      --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #11141b; --surface: #1a1f29; --surface-2: #232a36; --text: #e8ebf2; --muted: #9aa4b5; --border: #2d3544;
+        --accent: #6b90ff; --teal: #2cc4ad; --good: #3ccf7a; --warn: #ff9f3a; --bad: #ff6b6b; --shadow: 0 1px 2px rgba(0,0,0,.4);
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #11141b; --surface: #1a1f29; --surface-2: #232a36; --text: #e8ebf2; --muted: #9aa4b5; --border: #2d3544;
+      --accent: #6b90ff; --teal: #2cc4ad; --good: #3ccf7a; --warn: #ff9f3a; --bad: #ff6b6b; --shadow: 0 1px 2px rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden;
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    main { max-width: 760px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 16px 40px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+    header img { width: 52px; height: 52px; border-radius: 14px; box-shadow: var(--shadow); }
+    h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
+    .sub { color: var(--muted); margin: 2px 0 0; }
+    .apps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .app {
+      display: flex; flex-direction: column; gap: 10px; padding: 18px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow);
+      transition: transform .12s, border-color .12s;
+    }
+    .app:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .app:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 2px; }
+    .app-top { display: flex; align-items: center; gap: 12px; }
+    .app-top img { width: 44px; height: 44px; border-radius: 12px; }
+    .app h2 { margin: 0; font-size: 1.15rem; }
+    .app p { margin: 0; color: var(--muted); font-size: .92rem; }
+    .live { font-size: .85rem; min-height: 1.4em; display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+    .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+    .go { margin-top: auto; font-weight: 600; color: var(--accent); }
+    .tanks { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
+    .tank { font-size: .75rem; color: var(--muted); }
+    .tank b { color: var(--text); }
+    .tank .lvl { height: 5px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin-top: 2px; }
+    .tank .lvl span { display: block; height: 100%; background: var(--good); }
+    .tank .lvl span.warn { background: var(--warn); } .tank .lvl span.bad { background: var(--bad); }
+    footer { margin-top: 28px; color: var(--muted); font-size: .85rem; }
+    footer ul { padding-left: 18px; margin: 6px 0 0; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="lab-icon.svg" alt="">
+    <div>
+      <h1>Shimoyama Lab</h1>
+      <p class="sub">下山研究室 · lab tools</p>
+    </div>
+  </header>
+
+  <div class="apps">
+    <a class="app" href="https://purin1999.github.io/Research-dashboard/">
+      <div class="app-top">
+        <img src="https://purin1999.github.io/Research-dashboard/assets/icon.svg" alt="">
+        <h2>Research Progress</h2>
+      </div>
+      <p>Everyone's projects, stages and schedule. Update your own dashboard and see the whole group.</p>
+      <div class="live" id="rp-live"></div>
+      <span class="go">Open dashboard →</span>
+    </a>
+
+    <a class="app" href="waste/">
+      <div class="app-top">
+        <img src="waste/icon.svg" alt="">
+        <h2>Lab Waste Tracker</h2>
+      </div>
+      <p>Log what goes into each waste tank, check fill levels and the k / f-OH rules, and make the 様式2の2 Word form.</p>
+      <div class="live" id="w-live"></div>
+      <span class="go">Open waste tracker →</span>
+    </a>
+  </div>
+
+  <footer>
+    <b>First time?</b>
+    <ul>
+      <li>Viewing needs nothing. To make changes, ask the admin to add your GitHub account, then use <i>Sign in</i> in either app.</li>
+      <li>One sign-in on a device works for both apps.</li>
+      <li>On iPhone: Safari → Share → <i>Add to Home Screen</i>.</li>
+    </ul>
+  </footer>
+</main>
+<script>
+  // Small live summaries. Both files are on the same GitHub Pages site, so no sign-in is needed.
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const get = (url) => fetch(`${url}?t=${Date.now()}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+
+  get('waste/data.json').then((d) => {
+    const MAX = 10, ALERT = 9;
+    const active = d.tanks.filter((t) => !t.archived).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    const vol = (id) => d.entries.filter((e) => e.tank === id).reduce((a, e) => a + e.solvents.reduce((b, s) => b + s.L, 0), 0);
+    const tanks = active.map((t) => ({ ...t, v: vol(t.id) }));
+    const near = tanks.filter((t) => t.v > ALERT).length;
+    document.getElementById('w-live').innerHTML = `
+      <span class="pill"><span class="dot ${near ? 'warn' : ''}"></span>${tanks.length} active tank${tanks.length === 1 ? '' : 's'}${near ? ` · ${near} almost full` : ''}</span>
+      <div class="tanks" style="width:100%">${tanks.map((t) => {
+        const pct = Math.min(100, (t.v / MAX) * 100); const cls = t.v >= MAX - 0.001 ? 'bad' : t.v > ALERT ? 'warn' : '';
+        return `<div class="tank"><b>${esc(t.id)}</b> ${esc(t.type)}<div class="lvl"><span class="${cls}" style="width:${pct.toFixed(1)}%"></span></div></div>`;
+      }).join('')}</div>`;
+  }).catch(() => {});
+
+  get('https://purin1999.github.io/Research-dashboard/students.json').then((reg) => {
+    const n = (reg.students || []).length;
+    document.getElementById('rp-live').innerHTML = `<span class="pill"><span class="dot"></span>${n} member${n === 1 ? '' : 's'}</span>`;
+  }).catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Posts to the lab Discord when a waste tank goes past 9 L, like the old app did.
+# Needs a repository secret named DISCORD_WEBHOOK (Settings → Secrets and variables → Actions).
+name: Waste tank alert
+
+on:
+  push:
+    branches: [main]
+    paths: [waste/data.json]
+
+permissions:
+  contents: read
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check tank levels
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          BEFORE: ${{ github.event.before }}
+        run: node tools/waste-alert.mjs
