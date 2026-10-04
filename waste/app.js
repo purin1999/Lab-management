@@ -257,8 +257,8 @@ function renderTop() {
   $('#nav').innerHTML = [['tanks', '#/', '🧪 Tanks'], ['report', '#/report', '📊 Report'], ['feedback', '#/feedback', '💬 Feedback']]
     .map(([v, h, label]) => `<a href="${h}" class="${r.view === v ? 'on' : ''}">${label}</a>`).join('');
   $('#account').innerHTML = state.auth.token
-    ? `<button class="btn ghost small" data-act="account" title="Account">👤 ${esc(state.name || 'Account')}</button>`
-    : '<button class="btn primary small" data-act="signin">Sign in</button>';
+    ? `<button class="btn pill" data-act="account" title="Account">👤 ${esc(state.name || 'Account')}</button>`
+    : '<button class="btn primary pill" data-act="signin">Sign in</button>';
   const banner = $('#banner');
   banner.innerHTML = state.auth.token ? ''
     : '<div class="inner info">👀 You are viewing. <a href="#" data-act="signin">Sign in</a> with the lab token to log waste.</div>';
@@ -886,7 +886,10 @@ window.addEventListener('hashchange', () => {
   window.scrollTo(0, 0); render();
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.data && !state.busy) load({ quiet: true }); });
-$('#refresh').addEventListener('click', () => load());
+$('#refresh').addEventListener('click', async (e) => {
+  const btn = e.currentTarget; btn.classList.add('spin');
+  try { await load(); } finally { btn.classList.remove('spin'); }
+});
 const joinToken = takeJoinLink();
 load({ quiet: true });
 if (joinToken) openSignIn('Welcome! Enter your name to finish signing in.', joinToken);

@@ -1,7 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#1b2130"/>
-  <rect x="10" y="10" width="20" height="20" rx="5" fill="#3b6cf6"/>
-  <rect x="34" y="10" width="20" height="20" rx="5" fill="#0f9d8a"/>
-  <rect x="10" y="34" width="20" height="20" rx="5" fill="#f9c74f"/>
-  <rect x="34" y="34" width="20" height="20" rx="5" fill="#fff" opacity=".85"/>
+  <!-- Research Progress -->
+  <rect x="7" y="18" width="24" height="28" rx="6" fill="#3b6cf6"/>
+  <rect x="11.5" y="33" width="4" height="8" rx="1.2" fill="#22c55e"/>
+  <rect x="17" y="28" width="4" height="13" rx="1.2" fill="#facc15"/>
+  <rect x="22.5" y="23" width="4" height="18" rx="1.2" fill="#fff" opacity=".92"/>
+  <!-- Lab Waste -->
+  <rect x="33" y="18" width="24" height="28" rx="6" fill="#0f9d8a"/>
+  <path d="M41 23h8M42.5 23v5.5l-5 9a1.8 1.8 0 0 0 1.6 2.7h11.8a1.8 1.8 0 0 0 1.6-2.7l-5-9V23" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M39.6 34.5h10.8l2.1 3.8a.8.8 0 0 1-.7 1.2H38.2a.8.8 0 0 1-.7-1.2z" fill="#f9c74f"/>
 </svg>
