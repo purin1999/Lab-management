@@ -96,6 +96,10 @@ code { font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-r
 .btn.danger { color: var(--bad); }
 .btn.ghost { background: transparent; border-color: transparent; }
 .btn.small { padding: 5px 10px; min-height: 32px; font-size: .85rem; }
+.icon-btn { width: 38px; height: 38px; min-height: 38px; padding: 0; justify-content: center; border-radius: 50%; color: var(--muted); }
+.icon-btn:hover { color: var(--text); }
+.icon-btn.spin svg { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .btn.tiny { padding: 2px 9px; min-height: 28px; font-size: .78rem; border-radius: 8px; }
 .btn.tiny.warn { background: var(--surface); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--border)); }
 .btn.tiny.danger { border-color: color-mix(in srgb, var(--bad) 35%, var(--border)); }
