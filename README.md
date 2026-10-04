@@ -30,7 +30,7 @@ What it does (same rules as before):
 - **📊 Report:** lab-wide solvent totals for active tanks (archived ones are excluded), and every entry plus solvent
   totals per tank, ready to print.
 - **💬 Feedback** page.
-- **Discord alert** when a tank goes past 9 L (see setup below).
+- **Almost-full warning** when an entry takes a tank past 9 L.
 
 ### How it works
 
@@ -41,41 +41,50 @@ waste/form.js                 fills the Word template (port of the old build_for
 waste/data.json               ALL waste data: tanks, entries, feedback
 waste/templates/*.docx        様式2の2 templates, one per waste type
 tools/migrate_db.py           one-off: old database.db -> waste/data.json
-tools/waste-alert.mjs         Discord alert, run by .github/workflows/waste-alert.yml
 ```
 
-Anyone can view. To make a change, a lab member signs in with a GitHub token. Each change (log, edit, delete,
-tank settings, feedback) reads the latest `waste/data.json`, applies the change and commits it through the GitHub
-API. If two people save at the same moment, the second one is automatically re-applied on top of the first, so
-nothing is lost. Every change is a commit with the person's GitHub username, so the
-[commit history of `waste/data.json`](https://github.com/purin1999/Lab-management/commits/main/waste/data.json) is
-a complete audit log, and anything deleted by mistake can be restored from it.
+Anyone can view. To make changes, lab members sign in with **one shared lab token** that the admin creates and
+hands out (the waste data lives in the admin's repository, so nobody needs their own GitHub account for it). Each
+person also enters their **name**, which is saved on their entries (投入者氏名 on the Word form) and in the commit
+message. Feedback stays anonymous.
 
-The sign-in is shared with the Research dashboard (both are on `purin1999.github.io`), so one token on a device works
-for both apps, as long as the token can write to both repositories.
+Each change (log, edit, delete, tank settings, feedback) reads the latest `waste/data.json`, applies the change and
+commits it through the GitHub API. If two people save at the same moment, the second change is automatically
+re-applied on top of the first, so nothing is lost. The
+[commit history of `waste/data.json`](https://github.com/purin1999/Lab-management/commits/main/waste/data.json) is
+a complete log, and anything deleted by mistake can be restored from it.
+
+The lab token is stored separately from the Research dashboard's sign-in, so it never signs anyone in to the
+dashboard (where it would let them edit the admin's own progress). The dashboard keeps using each student's own
+GitHub account.
 
 ## One-time setup (admin)
 
 1. **Turn on GitHub Pages:** *Settings → Pages → Build and deployment → Deploy from a branch*, branch `main`,
    folder `/ (root)`. The site appears at <https://purin1999.github.io/Lab-management/>.
-2. **Invite each lab member:** *Settings → Collaborators → Add people* (their GitHub username). They must accept the
-   invitation from their GitHub email.
-3. **Discord alert (optional):** create a webhook in Discord (*Server settings → Integrations → Webhooks*), then in
-   GitHub go to *Settings → Secrets and variables → Actions → New repository secret*, name `DISCORD_WEBHOOK`, and
-   paste the webhook URL. Without the secret, the alert job just logs a warning.
+2. **Create the lab token** at <https://github.com/settings/personal-access-tokens/new>:
+   - *Token name*: `Lab waste tracker`
+   - *Expiration*: the longest you're comfortable with
+   - *Repository access*: **Only select repositories** → `purin1999/Lab-management` (only this one)
+   - *Repository permissions → Contents*: **Read and write** (nothing else)
+3. **Sign in** on the waste tracker with that token and your name, then **👤 → Invite a lab member → Copy sign-in
+   link**. Send the link to lab members privately (LINE, Slack, email). Opening it fills in the token, so they only
+   type their name.
+
+**Keep the token inside the lab.** Anyone who has it can change files in this repository (the history keeps
+everything, so changes can always be undone). Never put it in a file in this repository or post it publicly: GitHub
+detects leaked tokens and revokes them.
+
+**When the token expires or leaks:** delete it on <https://github.com/settings/personal-access-tokens>, create a new
+one the same way, sign in with it, and send the new sign-in link around. Everyone else sees *"The lab token was not
+accepted"* until they open the new link.
 
 ## Lab member setup (once per device)
 
-1. Accept the collaborator invitation (GitHub email).
-2. Create a token: <https://github.com/settings/tokens/new?scopes=public_repo&description=Lab%20management>
-   (*Tokens (classic)*, with the **public_repo** box ticked), pick an expiration or *No expiration*, then tap
-   **Generate token** and copy it.
-   > GitHub's newer *fine-grained* tokens only work for repositories you own, so they can't be used to write to
-   > `purin1999/…` as a collaborator. Use the classic token above. (The owner can use either.)
-3. Open the waste tracker, tap **Sign in**, paste the token. Check **👤 → Your name on entries**: that name is
-   written as 投入者氏名 on the Word form.
-4. On iPhone: Safari → Share → **Add to Home Screen**. The Home Screen app has its own storage, so sign in there once
-   too.
+1. Open the sign-in link from the admin (or tap **Sign in** and paste the token).
+2. Enter your name as it should appear on the Word form (e.g. `Purin` or `後藤 照希`) and tap **Sign in**.
+3. On iPhone: Safari → Share → **Add to Home Screen**. The Home Screen app has its own storage, so open the sign-in
+   link there once too (or paste the token).
 
 ## Running locally
 

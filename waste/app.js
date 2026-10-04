@@ -5,7 +5,7 @@ import { FORM_ROWS, FORM_TEMPLATES, buildFormDocx, formNum } from './form.js';
 
 // ---------------------------------------------------------------- rules
 const TANK_MAX_L = 10.0;
-const ALERT_THRESHOLD_L = 9.0; // the Discord alert (GitHub Action) uses the same number
+const ALERT_THRESHOLD_L = 9.0; // "almost full" warning
 const RULE_LIMIT_L = 2.5;      // k: non-water ≤ 2.5 L, f-OH: water ≤ 2.5 L
 const EPS = 0.001;
 const SOLVENTS = ['water', 'ethanol', 'acetone', 'hexane', 'cyclohexane', 'methanol'];
@@ -18,9 +18,9 @@ const EXTRA_COLORS = ['#adb5bd', '#90be6d', '#43aa8b', '#f8961e', '#b5838d', '#6
 const RECENT = 30;
 
 // ---------------------------------------------------------------- site / storage
-// The token is shared with the Research dashboard (same origin on GitHub Pages),
-// so one sign-in works for both apps.
-const KEY = { auth: 'rpd.auth', name: 'lab.waste.name' };
+// Not the Research dashboard's key (rpd.auth): the shared lab token belongs to the
+// admin's account and must never sign anyone in to the dashboard.
+const KEY = { auth: 'lab.waste.auth', name: 'lab.waste.name' };
 const store = {
   get(k, fb = null) { try { const v = localStorage.getItem(k); return v == null ? fb : JSON.parse(v); } catch { return fb; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
@@ -37,13 +37,11 @@ function detectRepo() {
   return { owner: 'purin1999', repo: 'Lab-management' };
 }
 const SITE = { ...detectRepo(), branch: 'main', path: 'waste/data.json' };
-const DASHBOARD_ROSTER = `https://${SITE.owner}.github.io/Research-dashboard/students.json`;
 
 const state = {
   data: null, sha: null, source: '', loadError: '',
-  auth: { token: '', login: '', ...(store.get(KEY.auth) || {}) },
+  auth: { token: '', ...(store.get(KEY.auth) || {}) },
   name: store.get(KEY.name, ''),
-  canWrite: null, // null = unknown, true/false after checking the repository
   form: null,     // the entry form of the open tank
   showAll: {},    // tank id -> show every entry
   busy: false,
@@ -175,8 +173,9 @@ class UserError extends Error {}
 // Every change: read the latest file, apply the change to it, commit. If someone
 // else committed in between, GitHub refuses the stale sha and we simply redo it,
 // so two people logging at the same time never overwrite each other.
-async function mutate(message, change) {
+async function mutate(message, change, { anonymous = false } = {}) {
   if (!state.auth.token) { openSignIn('Sign in to make changes.'); throw new UserError(''); }
+  if (!state.name && !anonymous) { openSignIn('Enter your name first, so the lab knows who logged it.'); throw new UserError(''); }
   if (state.busy) throw new UserError('Still saving the previous change…');
   state.busy = true; document.body.classList.add('busy');
   try {
@@ -184,7 +183,7 @@ async function mutate(message, change) {
       const { data, sha } = await ghGet();
       const result = change(data);
       try {
-        state.sha = await ghPut(data, sha, `${message} (by @${state.auth.login})`);
+        state.sha = await ghPut(data, sha, anonymous ? message : `${message} (by ${state.name})`);
         state.data = data; state.source = 'api';
         return result;
       } catch (e) {
@@ -194,9 +193,9 @@ async function mutate(message, change) {
     }
   } catch (e) {
     if (e instanceof UserError) throw e;
-    if (e.status === 401) throw new UserError('GitHub did not accept your token (expired or revoked?). Sign in again.');
+    if (e.status === 401) throw new UserError('The lab token was not accepted (it may have expired). Ask the admin for the new one and sign in again.');
     if (e.status === 403 || e.status === 404) {
-      throw new UserError(`Your token cannot write to ${SITE.owner}/${SITE.repo}. Check that you were invited as a collaborator (and accepted), and that the token has the “public_repo” scope.`);
+      throw new UserError(`The lab token cannot write to ${SITE.owner}/${SITE.repo}. Ask the admin to check its “Contents: Read and write” permission.`);
     }
     throw new UserError(`Could not save: ${e.message}`);
   } finally {
@@ -213,7 +212,7 @@ async function load({ quiet = false } = {}) {
         Object.assign(state, { data, sha, source: 'api', loadError: '' });
         render(); return;
       } catch (e) {
-        if (e.status === 401) toast('Your saved token was not accepted. Sign in again to make changes.', 6000);
+        if (e.status === 401) toast('The saved lab token was not accepted (expired?). Ask the admin for the new one.', 6000);
       }
     }
     const res = await fetch(`data.json?t=${Date.now()}`, { cache: 'no-store' });
@@ -224,15 +223,6 @@ async function load({ quiet = false } = {}) {
   }
   render();
   if (!quiet && state.source) toast('Up to date');
-}
-
-async function checkAccess() {
-  if (!state.auth.token) { state.canWrite = null; return; }
-  try {
-    const j = await ghApi(`https://api.github.com/repos/${SITE.owner}/${SITE.repo}`);
-    state.canWrite = !!j.permissions?.push;
-  } catch { state.canWrite = null; }
-  render();
 }
 
 // ---------------------------------------------------------------- routing
@@ -267,14 +257,11 @@ function renderTop() {
   $('#nav').innerHTML = [['tanks', '#/', '🧪 Tanks'], ['report', '#/report', '📊 Report'], ['feedback', '#/feedback', '💬 Feedback']]
     .map(([v, h, label]) => `<a href="${h}" class="${r.view === v ? 'on' : ''}">${label}</a>`).join('');
   $('#account').innerHTML = state.auth.token
-    ? `<button class="btn ghost small" data-act="account" title="Account">👤 ${esc(state.name || state.auth.login)}</button>`
+    ? `<button class="btn ghost small" data-act="account" title="Account">👤 ${esc(state.name || 'Account')}</button>`
     : '<button class="btn primary small" data-act="signin">Sign in</button>';
   const banner = $('#banner');
-  if (!state.auth.token) {
-    banner.innerHTML = '<div class="inner info">👀 You are viewing. <a href="#" data-act="signin">Sign in with GitHub</a> to log waste.</div>';
-  } else if (state.canWrite === false) {
-    banner.innerHTML = `<div class="inner warn">Signed in as @${esc(state.auth.login)}, but this account can't change <code>${esc(SITE.owner)}/${esc(SITE.repo)}</code> yet. Ask the admin to invite you as a collaborator, then accept the invitation from your GitHub email.</div>`;
-  } else banner.innerHTML = '';
+  banner.innerHTML = state.auth.token ? ''
+    : '<div class="inner info">👀 You are viewing. <a href="#" data-act="signin">Sign in</a> with the lab token to log waste.</div>';
 }
 
 function stackBar(bySolvent, scale, tall = false) {
@@ -497,7 +484,7 @@ function renderFeedback() {
   return `
   <h1>Feedback</h1>
   <section class="card pad">
-    <p class="small muted" style="margin-top:0">Found a bug or have a suggestion? Your name isn't shown here (the GitHub history still records who saved it).</p>
+    <p class="small muted" style="margin-top:0">Found a bug or have a suggestion? Feedback is anonymous: no name is saved with it.</p>
     <form id="fb-form"><textarea name="text" rows="3" placeholder="Your feedback… (日本語でも大丈夫です)" required></textarea>
       <div class="row"><span class="spacer"></span><button class="btn primary" type="submit">Submit</button></div></form>
   </section>
@@ -521,7 +508,7 @@ function afterRender(r) {
       const text = fb.text.value.trim();
       if (!text) return;
       try {
-        await mutate('Waste feedback', (d) => { d.feedback.push({ id: nextId(d.feedback), text, at: jstNow() }); });
+        await mutate('Waste feedback', (d) => { d.feedback.push({ id: nextId(d.feedback), text, at: jstNow() }); }, { anonymous: true });
         toast('Thanks! Feedback saved ✓');
       } catch (err) { if (err.message) toast(err.message, 7000); }
     });
@@ -547,7 +534,7 @@ async function submitEntry() {
   if (!(f.date <= today())) { toast('The date cannot be in the future.'); return; }
   const localErr = checkEntry(state.data, tankId, solvents, f.replaceId);
   if (localErr) { alert(`Entry rejected:\n${localErr}`); return; }
-  const by = state.name || state.auth.login;
+  const by = state.name;
   const editing = f.replaceId;
   try {
     const result = await mutate(`${editing ? 'Edit' : 'Log'} waste: tank ${tankId}`, (d) => {
@@ -559,16 +546,16 @@ async function submitEntry() {
         const e = d.entries.find((x) => x.id === editing);
         if (!e) throw new UserError('That entry was deleted by someone else.');
         if (e.at.slice(0, 10) !== f.date) e.at = stampFor(f.date);
-        e.solvents = solvents; e.editedBy = state.auth.login;
+        e.solvents = solvents; e.editedBy = by;
       } else {
-        d.entries.push({ id: nextId(d.entries), tank: tankId, by, gh: state.auth.login, at: stampFor(f.date), solvents });
+        d.entries.push({ id: nextId(d.entries), tank: tankId, by, at: stampFor(f.date), solvents });
       }
       return { before, after: tankSummary(d, tankId).total };
     });
     state.form = blankForm(tankId);
     render();
     if (result.before <= ALERT_THRESHOLD_L && result.after > ALERT_THRESHOLD_L) {
-      toast(`⚠️ Tank ${tankId} is almost full: ${f3(result.after)} / ${TANK_MAX_L} L. The lab Discord will be notified.`, 8000);
+      toast(`⚠️ Tank ${tankId} is almost full: ${f3(result.after)} / ${TANK_MAX_L} L. Time to arrange a pickup.`, 8000);
     } else toast(editing ? 'Entry updated ✓' : 'Logged ✓');
   } catch (e) {
     if (e.message.startsWith('Entry rejected')) alert(e.message);
@@ -805,47 +792,48 @@ function exportCsv(id) {
 }
 
 // ---------------------------------------------------------------- sign-in
-const CLASSIC_TOKEN_URL = 'https://github.com/settings/tokens/new?scopes=public_repo&description=Lab%20management';
+// The whole lab shares one token that the admin makes and hands out, so GitHub
+// sees every change as the admin. Who did what is the name each person enters,
+// which goes on their entries and in the commit message.
 
-async function suggestName(login, token) {
-  try {
-    const roster = await fetch(DASHBOARD_ROSTER, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null));
-    const st = roster?.students?.find((s) => String(s.github || '').toLowerCase() === login.toLowerCase());
-    if (st?.name) return st.name;
-  } catch { /* the dashboard is optional */ }
-  try { const u = await ghApi('https://api.github.com/user', { token }); return u.name || login; } catch { return login; }
+// "#/join/<token>" lets the admin send a single link instead of a pasted token.
+// The part after # never leaves the browser, so the token isn't sent to GitHub Pages.
+function takeJoinLink() {
+  const m = location.hash.match(/^#\/join\/([^/?#]+)/);
+  if (!m) return '';
+  history.replaceState(null, '', `${location.pathname}${location.search}#/`);
+  return decodeURIComponent(m[1]);
 }
+const joinLink = () => `${location.origin}${location.pathname}#/join/${encodeURIComponent(state.auth.token)}`;
 
-function openSignIn(note = '') {
+function openSignIn(note = '', token = state.auth.token) {
   openModal({
     title: 'Sign in',
     body: `<form id="si-form" autocomplete="off" class="stack">
       ${note ? `<p class="note info small">${esc(note)}</p>` : ''}
-      <p class="small muted" style="margin-top:0">Lab members sign in with a GitHub access token. If you already signed in to the Research dashboard on this device with a token that can also write to this repository, it is used here automatically.</p>
-      <label class="f"><span>Access token</span><input type="password" name="token" value="${esc(state.auth.token)}" placeholder="ghp_… or github_pat_…" autocapitalize="off" spellcheck="false" required></label>
-      <details class="help"><summary>How do I get a token?</summary>
-        <ol class="small">
-          <li>Make sure you've been invited to <code>${esc(SITE.owner)}/${esc(SITE.repo)}</code> and accepted the invitation (check your GitHub email).</li>
-          <li>Open <a href="${CLASSIC_TOKEN_URL}" target="_blank" rel="noopener">GitHub → New token (classic)</a>. The <b>public_repo</b> box is already ticked. Pick an expiration (or <i>No expiration</i>) and tap <b>Generate token</b>.</li>
-          <li>Copy the token (starts with <code>ghp_</code>) and paste it here.</li>
-        </ol>
-        <p class="small muted">GitHub's newer “fine-grained” tokens only work for repositories you own, so other lab members need the classic kind. The token stays in this browser and is only sent to <code>api.github.com</code>.</p>
-      </details>
+      <label class="f"><span>Your name (投入者氏名)</span><input name="name" value="${esc(state.name)}" placeholder="e.g. Purin or 後藤 照希" required></label>
+      <p class="small muted" style="margin-top:4px">Written on your entries and on the Word form, so use the name the lab expects.</p>
+      <label class="f"><span>Lab access token</span><input type="password" name="token" value="${esc(token)}" placeholder="github_pat_…" autocapitalize="off" spellcheck="false" required></label>
+      <p class="small muted">Ask the lab admin for the token or the sign-in link. Keep it inside the lab: don't post it anywhere public. It is saved only in this browser and only sent to <code>api.github.com</code>.</p>
     </form>`,
     footer: '<button class="btn" data-close>Cancel</button><button class="btn primary" type="submit" form="si-form">Sign in</button>',
     onMount(m) {
       const form = $('#si-form', m);
       guardedSubmit(form, async () => {
-        const token = form.token.value.trim();
-        let login;
-        try { login = (await ghApi('https://api.github.com/user', { token })).login; } catch (e) {
-          throw new UserError(e.status === 401 ? 'GitHub did not accept that token.' : `Sign-in failed: ${e.message}`);
+        const token = form.token.value.trim(); const name = form.name.value.trim();
+        state.auth = { token }; // ghGet below uses it
+        try {
+          const { data, sha } = await ghGet();
+          Object.assign(state, { data, sha, source: 'api', loadError: '' });
+        } catch (e) {
+          state.auth = { token: '' };
+          throw new UserError(e.status === 401 ? 'GitHub did not accept that token. It may have expired: ask the admin for the current one.'
+            : e.status === 403 || e.status === 404 ? `That token has no access to ${SITE.owner}/${SITE.repo}.` : `Sign-in failed: ${e.message}`);
         }
-        state.auth = { token, login }; store.set(KEY.auth, state.auth);
-        if (!state.name) { state.name = await suggestName(login, token); store.set(KEY.name, state.name); }
-        closeModal();
-        toast(`Signed in as @${login} ✓`);
-        await Promise.all([load({ quiet: true }), checkAccess()]);
+        store.set(KEY.auth, state.auth);
+        state.name = name; store.set(KEY.name, name);
+        closeModal(); render();
+        toast(`Signed in as ${name} ✓`);
       });
     },
   });
@@ -855,9 +843,12 @@ function openAccount() {
   openModal({
     title: 'Account',
     body: `<form id="acc-form" class="stack">
-      <p class="small">Signed in as <b>@${esc(state.auth.login)}</b>${state.canWrite === true ? ' · ✓ can log waste' : state.canWrite === false ? ' · <span class="bad">no write access yet</span>' : ''}</p>
       <label class="f"><span>Your name on entries (投入者氏名)</span><input name="name" value="${esc(state.name)}" required></label>
-      <p class="small muted">This name is printed in the Word form, so use the one your lab expects (e.g. 後藤 照希 or Purin).</p>
+      <p class="small muted">Printed in the Word form, so use the name the lab expects (e.g. 後藤 照希 or Purin).</p>
+      <details class="help"><summary>Invite a lab member</summary>
+        <p class="small">Send them this sign-in link privately (LINE, Slack, email). Opening it fills in the lab token; they only type their name.</p>
+        <button class="btn small" type="button" data-act="copy-join">Copy sign-in link</button>
+      </details>
     </form>`,
     footer: '<button class="btn danger" data-act="signout" type="button">Sign out on this device</button><span class="spacer"></span><button class="btn primary" type="submit" form="acc-form">Save</button>',
     onMount(m) {
@@ -870,9 +861,13 @@ function openAccount() {
     },
   });
 }
+actions['copy-join'] = async () => {
+  try { await navigator.clipboard.writeText(joinLink()); toast('Sign-in link copied. Share it only with lab members.', 4000); }
+  catch { prompt('Copy this sign-in link:', joinLink()); }
+};
 actions.signout = () => {
-  if (!confirm('Sign out on this device? This also signs you out of the Research dashboard here.')) return;
-  state.auth = { token: '', login: '' }; state.canWrite = null;
+  if (!confirm('Sign out on this device?')) return;
+  state.auth = { token: '' };
   store.del(KEY.auth);
   closeModal(); load({ quiet: true });
 };
@@ -885,8 +880,13 @@ function toast(msg, ms = 2600) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms);
 }
 
-window.addEventListener('hashchange', () => { window.scrollTo(0, 0); render(); });
+window.addEventListener('hashchange', () => {
+  const t = takeJoinLink();
+  if (t) { render(); openSignIn('Welcome! Enter your name to finish signing in.', t); return; }
+  window.scrollTo(0, 0); render();
+});
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.data && !state.busy) load({ quiet: true }); });
 $('#refresh').addEventListener('click', () => load());
+const joinToken = takeJoinLink();
 load({ quiet: true });
-checkAccess();
+if (joinToken) openSignIn('Welcome! Enter your name to finish signing in.', joinToken);
