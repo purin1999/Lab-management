@@ -1,0 +1,595 @@
+{
+ "version": 1,
+ "tanks": [
+  {
+   "id": "15",
+   "type": "f-OH",
+   "archived": false
+  },
+  {
+   "id": "39",
+   "type": "k",
+   "archived": false
+  },
+  {
+   "id": "40",
+   "type": "k",
+   "archived": false
+  },
+  {
+   "id": "41",
+   "type": "k",
+   "archived": false
+  },
+  {
+   "id": "42",
+   "type": "k",
+   "archived": false
+  },
+  {
+   "id": "99",
+   "type": "f-OH",
+   "archived": false
+  }
+ ],
+ "entries": [
+  {
+   "id": 30,
+   "tank": "15",
+   "by": "後藤 照希",
+   "at": "2026-06-17 18:13:19",
+   "solvents": [
+    {
+     "name": "1-Butanol",
+     "L": 0.004,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "hexane",
+     "L": 0.004,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "water",
+     "L": 2.0,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "acetone",
+     "L": 0.05,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 31,
+   "tank": "15",
+   "by": "松岡 優輝",
+   "at": "2026-06-17 18:22:08",
+   "solvents": [
+    {
+     "name": "acetonitrile",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "acetone",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "ethyl acetate",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "isopropyl acetate",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1,4-dioxane",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "tetrahydrofuran",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1-methyl-2-pyrrolidone",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "n-pentane",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "decane",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "dodecane",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "ethyl benzene",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "o-xylene",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "p-xylene",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "water",
+     "L": 0.1,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 33,
+   "tank": "15",
+   "by": "松岡 優輝",
+   "at": "2026-06-19 18:28:16",
+   "solvents": [
+    {
+     "name": "methanol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1-hexanol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1-heptanol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1-octanol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1-decanol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "1-ethyleneglycol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "acetic acid",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "formic acid",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "acetylacetone",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "2-aminoethanol",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "pyridine",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "morpholine",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "benzylamine",
+     "L": 0.002,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "water",
+     "L": 0.1,
+     "solute": "",
+     "conc": null
+    },
+    {
+     "name": "ethanol",
+     "L": 2.0,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "tank": "99",
+   "by": "Tho",
+   "at": "2026-07-03 18:29:21",
+   "solvents": [
+    {
+     "name": "acetone",
+     "L": 0.5,
+     "solute": "AgNPs",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "tank": "99",
+   "by": "Purin",
+   "at": "2026-07-06 19:08:07",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.2,
+     "solute": "AOT",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 47,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-07 15:07:42",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.2,
+     "solute": "NaBH(OAc)3",
+     "conc": 5.0
+    }
+   ]
+  },
+  {
+   "id": 48,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-07 15:08:25",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.1,
+     "solute": "硝酸",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 40,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-12 15:03:51",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.2,
+     "solute": "硝酸銀",
+     "conc": 2.0
+    }
+   ]
+  },
+  {
+   "id": 44,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-12 15:05:57",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.2,
+     "solute": "ドデカンチオール",
+     "conc": 1.0
+    }
+   ]
+  },
+  {
+   "id": 45,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-12 15:06:43",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.2,
+     "solute": "NaBH(OAc)3",
+     "conc": 5.0
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "tank": "99",
+   "by": "Shogo",
+   "at": "2026-07-21 12:21:32",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.05,
+     "solute": "VGP",
+     "conc": 0.001
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-22 15:04:09",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.1,
+     "solute": "クエン酸三ナトリウム",
+     "conc": 1.0
+    }
+   ]
+  },
+  {
+   "id": 43,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-22 15:04:36",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.1,
+     "solute": "NaBH(OAc)3",
+     "conc": 5.0
+    }
+   ]
+  },
+  {
+   "id": 26,
+   "tank": "99",
+   "by": "Purin Puprompan",
+   "at": "2026-07-22 17:35:57",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.4,
+     "solute": "Test subject",
+     "conc": 25.0
+    }
+   ]
+  },
+  {
+   "id": 27,
+   "tank": "39",
+   "by": "Tho",
+   "at": "2026-07-22 18:05:14",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.04,
+     "solute": "AgNO3",
+     "conc": 16.7
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "tank": "39",
+   "by": "Tho",
+   "at": "2026-07-22 18:05:46",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.2,
+     "solute": "NaBH(OAc)3, Trisodium Citrate",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 29,
+   "tank": "39",
+   "by": "Tho",
+   "at": "2026-07-22 18:06:34",
+   "solvents": [
+    {
+     "name": "water",
+     "L": 0.44,
+     "solute": "HNO3",
+     "conc": 5.73
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "tank": "39",
+   "by": "Rinku",
+   "at": "2026-07-23 15:04:24",
+   "solvents": [
+    {
+     "name": "Toluene",
+     "L": 0.1,
+     "solute": "Ag",
+     "conc": 0.1
+    }
+   ]
+  },
+  {
+   "id": 49,
+   "tank": "39",
+   "by": "Takuya",
+   "at": "2026-07-23 15:17:51",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.01,
+     "solute": "DSPC",
+     "conc": 14.0
+    },
+    {
+     "name": "water",
+     "L": 0.05,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 50,
+   "tank": "39",
+   "by": "Misaki",
+   "at": "2026-09-11 18:05:53",
+   "solvents": [
+    {
+     "name": "linoleic acid",
+     "L": 0.02,
+     "solute": "DPPC",
+     "conc": 2.0
+    }
+   ]
+  },
+  {
+   "id": 51,
+   "tank": "40",
+   "by": "Rei",
+   "at": "2026-09-26 11:57:01",
+   "solvents": [
+    {
+     "name": "methanol",
+     "L": 0.2,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 52,
+   "tank": "40",
+   "by": "Rei",
+   "at": "2026-09-27 11:57:20",
+   "solvents": [
+    {
+     "name": "acetone",
+     "L": 0.1,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 53,
+   "tank": "40",
+   "by": "Rei",
+   "at": "2026-09-27 17:50:56",
+   "solvents": [
+    {
+     "name": "acetone",
+     "L": 0.25,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  },
+  {
+   "id": 54,
+   "tank": "39",
+   "by": "M. Yuki",
+   "at": "2026-09-30 11:01:06",
+   "solvents": [
+    {
+     "name": "NMP",
+     "L": 0.01,
+     "solute": "CB",
+     "conc": 0.5
+    }
+   ]
+  },
+  {
+   "id": 55,
+   "tank": "40",
+   "by": "Rei",
+   "at": "2026-10-02 20:02:56",
+   "solvents": [
+    {
+     "name": "ethanol",
+     "L": 0.5,
+     "solute": "",
+     "conc": null
+    }
+   ]
+  }
+ ],
+ "feedback": [
+  {
+   "id": 1,
+   "text": "Feel free to leave any feedback (日本語でも大丈夫です)",
+   "at": "2026-07-02 16:13:17"
+  },
+  {
+   "id": 2,
+   "text": "Total solvent summary",
+   "at": "2026-07-03 12:58:21"
+  },
+  {
+   "id": 3,
+   "text": "登録したときのDate/TimeのTimeが実際とは異なっていました。\nDataのみの出力でも支障はなさそうと思いました。",
+   "at": "2026-07-03 19:49:45"
+  },
+  {
+   "id": 4,
+   "text": "全体的に直感的に使いやすいです！\n1点、Soluteの覧で、単純な質量でも入力できるようになるとありがたいです。",
+   "at": "2026-07-06 18:33:06"
+  }
+ ]
+}

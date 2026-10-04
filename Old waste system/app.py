@@ -15,8 +15,8 @@ FORM_TEMPLATES = {
     "k": os.path.join(os.path.dirname(__file__), "k_template.docx"),
 }
 
-LAB_PASSWORD = "scfgel2011"
-DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1521458077474492489/qoRpMhKqdeeE9GxYQxec0cgaDb_Cvw5iWBUkV-Rq_RpsVUBDs_WKKdSF1IHy1sU41IeK"
+LAB_PASSWORD = ""  # removed: this file is public
+DISCORD_WEBHOOK = ""  # removed: this file is public
 ALERT_THRESHOLD_L = 9.0
 
 SOLVENTS = ["water", "ethanol", "acetone", "hexane", "cyclohexane", "methanol"]
