@@ -96,7 +96,12 @@ code { font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-r
 .btn.danger { color: var(--bad); }
 .btn.ghost { background: transparent; border-color: transparent; }
 .btn.small { padding: 5px 10px; min-height: 32px; font-size: .85rem; }
-.icon-btn { width: 38px; height: 38px; min-height: 38px; padding: 0; justify-content: center; border-radius: 50%; color: var(--muted); }
+/* Refresh + account sit together on the right as one group of matching pills. */
+.top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+#account { display: contents; }
+.btn.pill { height: 36px; min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--surface); }
+.btn.pill.primary { background: var(--accent); }
+.icon-btn { width: 36px; padding: 0 !important; justify-content: center; color: var(--muted); }
 .icon-btn:hover { color: var(--text); }
 .icon-btn.spin svg { animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

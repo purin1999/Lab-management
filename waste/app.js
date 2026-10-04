@@ -257,8 +257,8 @@ function renderTop() {
   $('#nav').innerHTML = [['tanks', '#/', '🧪 Tanks'], ['report', '#/report', '📊 Report'], ['feedback', '#/feedback', '💬 Feedback']]
     .map(([v, h, label]) => `<a href="${h}" class="${r.view === v ? 'on' : ''}">${label}</a>`).join('');
   $('#account').innerHTML = state.auth.token
-    ? `<button class="btn ghost" data-act="account" title="Account">👤 ${esc(state.name || 'Account')}</button>`
-    : '<button class="btn primary" data-act="signin">Sign in</button>';
+    ? `<button class="btn pill" data-act="account" title="Account">👤 ${esc(state.name || 'Account')}</button>`
+    : '<button class="btn primary pill" data-act="signin">Sign in</button>';
   const banner = $('#banner');
   banner.innerHTML = state.auth.token ? ''
     : '<div class="inner info">👀 You are viewing. <a href="#" data-act="signin">Sign in</a> with the lab token to log waste.</div>';
